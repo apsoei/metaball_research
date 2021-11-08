@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/jaeseoko/Research/public/src/yssystemfont/src/macosx/ysmacosxsystemfont.cpp
+stdio.h
+-
+../yssystemfont.h
+/Users/jaeseoko/Research/public/src/yssystemfont/src/yssystemfont.h
+
+/Users/jaeseoko/Research/public/src/yssystemfont/src/yssystemfont.h
+

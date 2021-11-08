@@ -1,0 +1,43 @@
+nx ny nz                        Number of boxes in xyz directions
+minx miny minz maxx maxy maxz   3D space that the boxes cover
+value                           <- (0,0,0)
+value                           <- (1,0,0)
+value
+value
+value
+  :
+  :
+  :
+value                           <- (nx,ny,nz)
+
+
+
+2 2 2
+-1 -1 -1 1 1 1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1

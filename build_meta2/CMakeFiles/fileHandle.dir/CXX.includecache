@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/jaeseoko/Research/src/metaball/fileHandle.cpp
+iostream
+-
+fstream
+-
+vector
+-
+stdio.h
+-
+string
+-
+algorithm
+-
+iterator
+-
+fileHandle.h
+/Users/jaeseoko/Research/src/metaball/fileHandle.h
+
+/Users/jaeseoko/Research/src/metaball/fileHandle.h
+
