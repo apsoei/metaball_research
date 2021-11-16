@@ -1470,7 +1470,7 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                 if(flags[e] == false)
                 {
 
-                    if(true==hasFirst && true==itsc_exist && true!=inserted)
+                    if(true==hasFirst && true==itsc_exist && true!=inserted && cube.itscs.size()>1)
                     {
 // std::cout << "inserting intersection " <<std::endl;
                         inserted = true;
@@ -1533,8 +1533,7 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                     
 
 // std::cout << "current idx in false flag loop: " << e <<std::endl;
-                    
-                        
+
                 }
             }
             
@@ -1567,15 +1566,17 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
         // Unmodified initial polygon.
         std::vector<int> plg;
 
+        std::vector<std::vector<int>> totalPlg;
+
         while(edgeSet.size()>0)
         {
+            plg.clear();
             auto e = edgeSet[0];
             edgeSet.erase(edgeSet.begin());
             int init = e[0];
             int common = e[1];
             auto current = e;
-            
-            
+                    
             // if(itscSet.size()==0)
             if(itscSet.size()<2)
             {
@@ -1583,10 +1584,12 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
             }
             
             plg.push_back(init);
-            
-            
-
+    
             bool loop = false;
+            // TODO
+            // Id:-1 (key:5235) (6.960583000000, 1.680433000000, -1.524185000000)
+            // Id:-1 (key:5238) (6.960583000000, 1.276537000000, -1.120289000000)
+
             while(false==loop)
             {
                 for(int i =0; i<edgeSet.size(); ++i)
@@ -1600,9 +1603,7 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                             objFace.push_back(common);
                         }
                         plg.push_back(common);
-                        
-                        
-                        
+
                         common = edgeSet[i][1];
                         current = edgeSet[i];
                         
@@ -1616,6 +1617,7 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                             {
                                 objFace.push_back(0);
                             }
+                            totalPlg.push_back(plg);
                             
                             // objFace.push_back(init);
                             break;
@@ -1643,6 +1645,7 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                             {
                                 objFace.push_back(0);
                             }
+                            totalPlg.push_back(plg);
                             // plg.push_back(0);
                             // objFace.push_back(init);
                             break;
@@ -1673,18 +1676,28 @@ std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
                 printf("%f,%f,%f\n",itscVt.x,itscVt.y,itscVt.z);
             }
 
-            for(int i = 0; i< plg.size(); ++i)
+            for(auto onePlg : totalPlg)
             {
-                highVtx.push_back(objVtx[3*plg[i%plg.size()]-3]);
-                highVtx.push_back(objVtx[3*plg[i%plg.size()]-2]);
-                highVtx.push_back(objVtx[3*plg[i%plg.size()]-1]);
-                highCol.push_back(0);highCol.push_back(1);highCol.push_back(0);highCol.push_back(1);
-                highVtx.push_back(objVtx[3*plg[(i+1)%plg.size()]-3]);
-                highVtx.push_back(objVtx[3*plg[(i+1)%plg.size()]-2]);
-                highVtx.push_back(objVtx[3*plg[(i+1)%plg.size()]-1]);
-                highCol.push_back(0);highCol.push_back(1);highCol.push_back(0);highCol.push_back(1);
+                for(int i = 0; i< onePlg.size(); ++i)
+                {
+                    highVtx.push_back(objVtx[3*onePlg[i%onePlg.size()]-3]);
+                    highVtx.push_back(objVtx[3*onePlg[i%onePlg.size()]-2]);
+                    highVtx.push_back(objVtx[3*onePlg[i%onePlg.size()]-1]);
+                    highCol.push_back(0);highCol.push_back(0);highCol.push_back(0);highCol.push_back(1);
+                    highVtx.push_back(objVtx[3*onePlg[(i+1)%onePlg.size()]-3]);
+                    highVtx.push_back(objVtx[3*onePlg[(i+1)%onePlg.size()]-2]);
+                    highVtx.push_back(objVtx[3*onePlg[(i+1)%onePlg.size()]-1]);
+                    highCol.push_back(0);highCol.push_back(0);highCol.push_back(0);highCol.push_back(1);
+                }
+                
             }
 
+            printf("printing polygon f's\n");
+            for(int f : plg)
+            {
+                printf("%d ",f);
+            }
+            printf("\n");
 
 
             foundWhichCube = false;
@@ -1700,19 +1713,23 @@ std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
 // std::cout<<spl<<std::endl;
                 splits.push_back(spl);
             }
-            auto splitPlgs = Split(plg,splits);
-// std::cout << __FUNCTION__ << " - - - - - - - - - -" <<__LINE__<< std::endl;
-            for(auto pl : splitPlgs)
+            for(auto onePlg : totalPlg)
             {
-                for(int p : pl)
+                auto splitPlgs = Split(onePlg,splits);
+                // std::cout << __FUNCTION__ << " - - - - - - - - - -" <<__LINE__<< std::endl;
+                for(auto pl : splitPlgs)
                 {
-                    // std::cout<< p <<"-";
-                    objFace.push_back(p);
+                    for(int p : pl)
+                    {
+                        // std::cout<< p <<"-";
+                        objFace.push_back(p);
+                    }
+                    // std::cout<<std::endl;
+                    objFace.push_back(0);
                 }
-                // std::cout<<std::endl;
-                objFace.push_back(0);
-            }
 // std::cout << __FUNCTION__ << " - - - - - - - - - -" <<__LINE__<< std::endl;
+            }
+            
         }
         
 
@@ -2395,7 +2412,7 @@ void ApplicationMain::Draw(void) const
         glEnableClientState(GL_COLOR_ARRAY);
         glColorPointer(4,GL_FLOAT,0,highCol.data());
         glVertexPointer(3,GL_FLOAT,0,highVtx.data());
-        glLineWidth(12);
+        glLineWidth(15);
         glDrawArrays(GL_LINES,0,highVtx.size()/3);
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
@@ -2436,19 +2453,19 @@ void ApplicationMain::RunOneStep(void)
 	
     if(FsGetKeyState(FSKEY_LEFT))
     {
-        Rc.RotateXZ(YsPi/60.0);
+        Rc.RotateXZ(YsPi/120.0);
     }
     if(FsGetKeyState(FSKEY_RIGHT))
     {
-        Rc.RotateXZ(-YsPi/60.0);
+        Rc.RotateXZ(-YsPi/120.0);
     }
     if(FsGetKeyState(FSKEY_UP))
     {
-        Rc.RotateYZ(YsPi/60.0);
+        Rc.RotateYZ(YsPi/120.0);
     }
     if(FsGetKeyState(FSKEY_DOWN))
     {
-        Rc.RotateYZ(-YsPi/60.0);
+        Rc.RotateYZ(-YsPi/120.0);
     }
 
     if(key==FSKEY_Q)
@@ -2521,15 +2538,15 @@ void ApplicationMain::RunOneStep(void)
         term=true;
     }
 
-    // ZOOM IN
-    if(key==FSKEY_WHEELUP)
+    // ZOOM OUT
+    if(key==FSKEY_WHEELUP || key==FSKEY_Q)
     {
 
         d+=0.03*d;
     }
 
-    // ZOOM OUT
-    if(key==FSKEY_WHEELDOWN)
+    // ZOOM IN
+    if(key==FSKEY_WHEELDOWN || key==FSKEY_W)
     {
 
         d-=0.03*d;
