@@ -1319,48 +1319,47 @@ std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
 // std::cout << "FINDING WHICH CUBE . . ."<< std::endl;
 // std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
             // intersection and interpolation points of current cube in 1-D vector.
-            float avgX = 0,avgY = 0,avgZ = 0;
-            for(auto p : polyVert)
+            
+            for(int p= 0; p<polyVert.size(); ++p)
             {
-                avgX+=p[0];
-                avgY+=p[1];
-                avgZ+=p[2];
-            }
+                float avgX = 0,avgY = 0,avgZ = 0;
 
-            avgX/=polyVert.size();
-            avgY/=polyVert.size();
-            avgZ/=polyVert.size();
-
-
-            
-            auto minX = cube.edge[0].vtx1[0];
-            auto maxX = cube.edge[0].vtx2[0];
-
-            auto minY = cube.edge[2].vtx1[1];
-            auto maxY = cube.edge[2].vtx2[1];
-
-            auto minZ = cube.edge[1].vtx1[2];
-            auto maxZ = cube.edge[1].vtx2[2];
+                for(int i = 0; i<polyVert[p].size()/3; ++i)
+                {
+printf("current index i: %d\n",i);
+printf("Accessing each point:(%f,%f,%f)\n",polyVert[p][3*i],polyVert[p][3*i+1],polyVert[p][3*i+2]);
+                    avgX+=polyVert[p][3*i];
+                    avgY+=polyVert[p][3*i+1];
+                    avgZ+=polyVert[p][3*i+2];
+                }
+                avgX/=polyVert[p].size()/3;
+                avgY/=polyVert[p].size()/3;
+                avgZ/=polyVert[p].size()/3;
 
 
+                
+                auto minX = cube.edge[0].vtx1[0];
+                auto maxX = cube.edge[0].vtx2[0];
 
+                auto minY = cube.edge[2].vtx1[1];
+                auto maxY = cube.edge[2].vtx2[1];
 
-            
+                auto minZ = cube.edge[1].vtx1[2];
+                auto maxZ = cube.edge[1].vtx2[2];
 
-            if(avgX >= minX && avgX <= maxX &&
-               avgY >= minY && avgY <= maxY &&
-               avgZ >= minZ && avgZ <= maxZ)
-               {
+                if(avgX >= minX && avgX <= maxX &&
+                avgY >= minY && avgY <= maxY &&
+                avgZ >= minZ && avgZ <= maxZ)
+                {
 std::cout << "FOUND ! ! ! ! ! !"<< std::endl;
-                   foundWhichCube = true;
+                    foundWhichCube = true;
 printf("-+-+-+-+-+-+-+-+-+-+-+\n");
 printf("cube min =          (%f, %f, %f)\n",minX,minY,minZ);
 printf("point of interest = (%f, %f, %f)\n",avgX,avgY,avgZ);
 printf("cube max =          (%f, %f, %f)\n",maxX,maxY,maxZ);
-
-            debugCubeCen[0] = (minX + maxX) / 2;
-            debugCubeCen[1] = (minY + maxY) / 2;
-            debugCubeCen[2] = (minZ + maxZ) / 2;
+                    debugCubeCen[0] = (minX + maxX) / 2;
+                    debugCubeCen[1] = (minY + maxY) / 2;
+                    debugCubeCen[2] = (minZ + maxZ) / 2;
 printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                     for(auto e : edges)
                     {
@@ -1372,11 +1371,23 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                         highVtx.push_back(vt2[0]); highVtx.push_back(vt2[1]); highVtx.push_back(vt2[2]);
                         highCol.push_back(1);highCol.push_back(0);highCol.push_back(0);highCol.push_back(1);
 
-
-                        
+                    }
+                    if(polyVert.size()>1)
+                    {
+                        polyVert.erase(polyVert.begin() + p);
+std::cout <<__FUNCTION__<<__LINE__<< std::endl;
+                    }
+                    else
+                    {
+                        polyVert.clear();
+std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                     }
 
-               }
+                }
+                
+            }
+
+            
             
 
 
@@ -2580,6 +2591,7 @@ void ApplicationMain::RunOneStep(void)
 std::cout<<__FUNCTION__<<__LINE__<<std::endl;
         if(true!=highlight) highlight = true;
         else highlight = false;
+printf("highlighted vtx num: %d \n",highVtx.size()/3);
     }
 
     if(key == FSKEY_I)
@@ -2711,28 +2723,44 @@ ApplicationMain::ApplicationMain(int argc, char *argv[])
         else
         {
             float a;
+            char c[256];
             std::vector<float> temp;
-            int count = 0;
-std::cout<<__FUNCTION__<<__LINE__<<std::endl;
-            while(myfile>>a)
-            {
+            char sharp[] = "#";
 
-std::cout << a <<std::endl;
-                temp.push_back(a);
-                count++;
-                if(temp.size()==3)
+            while(myfile>>c)
+            {
+                
+                if(strcmp(c,sharp)==0)
                 {
                     polyVert.push_back(temp);
                     temp.clear();
+// std::cout<<__FUNCTION__<<__LINE__<<std::endl;
                 }
+                else
+                {
+                    temp.push_back(atof(c));
+                }
+                
+// std::cout<<__FUNCTION__<<__LINE__<<std::endl;
+                
+                // if(temp.size()==3)
+                // {
+                //     polyVert.push_back(temp);
+                //     temp.clear();
+                // }
             }
-            for(auto p : polyVert)
+std::cout<<"CHECK INPUT POLYVERT\n";
+std::cout<< "polyVert.size(): " << polyVert.size() <<std::endl;
+            for(auto points : polyVert)
             {
-std::cout<<__FUNCTION__<<__LINE__<<std::endl;
-                std::cout<<p.size()<<std::endl;
-                printf("%f,%f,%f -",p[0],p[1],p[2]);
+                for(auto v : points)
+                {
+                    printf("%f ",v);
+                }
+                printf("\n");
             }
-            std::cout<<std::endl;
+            
+        
             myfile.close();
 
 
