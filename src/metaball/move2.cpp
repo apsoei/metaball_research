@@ -175,6 +175,7 @@ public:
         // Cube *a,r,o,u,n,d;
         // Cube *next;
         
+        std::vector<bool> faceCleans {true,true,true,true,true,true};
         int xInd,yInd,zInd;
         class Edge
         {
@@ -208,16 +209,18 @@ public:
         // left: edge   1,6,10,2
         // front: edge  0,2,9,4
         // back: edge   5,7,11,6
-        class itscVtx
+        class ItscVtx
         {
         public:
             int vtident = 0;
             float x,y,z;
         };
-        std::vector<itscVtx> itscs;
+        std::vector<ItscVtx> itscs;
 
-        // This is pair of which face itscVtx is on, and index to find it in itscVtx.
+        // This is pair of which face ItscVtx is on, and index to find it in ItscVtx.
+        // first = faceNum, second = index in itscs.
         std::vector<std::pair<int,int>> itscFaceNums;
+
 
 
         // face numbering scheme: top: 1 bot: 2 rig: 3 lef: 4 fro: 5 bac: 6
@@ -367,6 +370,7 @@ public:
     public:
         int xi,yi,zi;
         int faceNum;
+        std::vector<Cube::ItscVtx> itsc;
 
     };
     std::vector<IndexAndFace> indexFace;
@@ -729,30 +733,107 @@ printf("neiVal = %f, currVal = %f\n",neiVal,currVal);
 
 void ApplicationMain::SearchAndMoveItsc(void)
 {
+    // moving in directions: N,S,E,W,UP,DOWN.
     int sequence[18] = {1,0,0, 0,0,1, -1,0,0, 0,0,-1, 
                         0,-1,0,
                         0,1,0};
+    auto valX = nx+1;
+    auto valY = ny+1;
+    auto valZ = nz+1;
+
     for(auto idf : indexFace)
     {
         auto currX = idf.xi;
         auto currY = idf.yi;
         auto currZ = idf.zi;
         auto currFace = idf.faceNum;
+        auto currItsc = idf.itsc[0];
+
+        bool moved = false;
         for(int i = 0; i<16; i+=3)
         {
-            auto neiX = currX + sequence[i];
-            auto neiY = currY + sequence[i+1];
-            auto neiZ = currZ + sequence[i+2];
-            if(neiX<nx && neiY<ny && neiZ<nz)
+            if(true!=moved)
             {
-                if(true!=cubes[neiX + nx*neiY + nx*ny*neiZ].clean)
+                auto neiXi = currX + sequence[i];
+                auto neiYi = currY + sequence[i+1];
+                auto neiZi = currZ + sequence[i+2];
+                if(neiXi<nx && neiYi<ny && neiZi<nz)
                 {
-                    
-                }
-            }
-            
-        }
+                    int fNum = currFace;
+                    std::vector<std::vector<int>> corners {4};
 
+                    switch (fNum)
+                    {
+                    case 0:
+                        corners[0] = {neiXi  ,neiYi,neiZi};
+                        corners[1] = {neiXi+1,neiYi,neiZi};
+                        corners[2] = {neiXi+1,neiYi,neiZi+1};
+                        corners[3] = {neiXi  ,neiYi,neiZi+1};
+                        break;
+                    case 1:
+                        corners[0] = {neiXi  ,neiYi+1,neiZi};
+                        corners[1] = {neiXi+1,neiYi+1,neiZi};
+                        corners[2] = {neiXi+1,neiYi+1,neiZi+1};
+                        corners[3] = {neiXi  ,neiYi+1,neiZi+1};
+                        break;
+                    case 2:
+                        corners[0] = {neiXi+1,neiYi,  neiZi};
+                        corners[1] = {neiXi+1,neiYi+1,neiZi};
+                        corners[2] = {neiXi+1,neiYi+1,neiZi+1};
+                        corners[3] = {neiXi+1,neiYi,  neiZi+1};
+                        break;
+                    case 3:
+                        corners[0] = {neiXi,neiYi,  neiZi};
+                        corners[1] = {neiXi,neiYi+1,neiZi};
+                        corners[2] = {neiXi,neiYi+1,neiZi+1};
+                        corners[3] = {neiXi,neiYi,  neiZi+1};
+                        break;
+                    case 4:
+                        corners[0] = {neiXi,  neiYi,  neiZi};
+                        corners[1] = {neiXi,  neiYi+1,neiZi};
+                        corners[2] = {neiXi+1,neiYi+1,neiZi};
+                        corners[3] = {neiXi+1,neiYi,  neiZi};
+                        break;
+                    case 5:
+                        corners[0] = {neiXi,  neiYi,  neiZi+1};
+                        corners[1] = {neiXi,  neiYi+1,neiZi+1};
+                        corners[2] = {neiXi+1,neiYi+1,neiZi+1};
+                        corners[3] = {neiXi+1,neiYi,  neiZi+1};
+                        break;    
+                    }
+                    auto v0 = fvals[corners[0][0] + valX*corners[0][1] + valX*valY*corners[0][2]];
+                    auto v1 = fvals[corners[1][0] + valX*corners[1][1] + valX*valY*corners[1][2]];
+                    auto v2 = fvals[corners[2][0] + valX*corners[2][1] + valX*valY*corners[2][2]];
+                    auto v3 = fvals[corners[3][0] + valX*corners[3][1] + valX*valY*corners[3][2]];
+
+                    bool hasItsc = false;
+                    for(auto fId : cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscFaceNums)
+                    {
+                        if(fId.first == fNum)
+                        {
+                            hasItsc = true;
+                        }
+                    }
+                    // want to find not clean face.
+                    if( (v0>0 && v1>0 && v2>0 && v3>0) ||
+                        (v0<0 && v1<0 && v2<0 && v3<0) )
+                        {
+                        }
+
+                    // NOT CLEAN.    
+                    else if(true!=hasItsc)
+                    {
+                        cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscs.push_back(currItsc);
+                        int itscSize = cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscs.size();
+                        cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscFaceNums.push_back(std::make_pair(fNum,itscSize-1));
+                        moved = true;
+                        break;
+                    }
+                }
+
+            }
+
+        }
     }
 }
 
@@ -979,7 +1060,7 @@ bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<
                 if(dotProd < 0) // 11/23/2021 UPDATE
                 {
                     
-                    Cube::itscVtx temp;
+                    Cube::ItscVtx temp;
                     temp.x = x; 
                     temp.y = y;
                     temp.z = z;
@@ -990,6 +1071,7 @@ bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<
                     IndexAndFace idf;
                     idf.xi = cube.xInd; idf.yi = cube.yInd; idf.zi = cube.zInd;
                     idf.faceNum = face;
+                    idf.itsc.push_back(temp);
 std::cout<< __FUNCTION__ << __LINE__ <<std::endl;
 
                     indexFace.push_back(idf);
@@ -2990,7 +3072,10 @@ std::cout<< wid <<","<<minX <<","<<nx<<","<<xStep<<std::endl;
         std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
 
         // modify . . .
-        // SearchAndModify();
+        SearchAndModify();
+        std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
+
+        // SearchAndMoveItsc();
         std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
 
         MarchingCube();
