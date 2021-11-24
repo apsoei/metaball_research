@@ -45,6 +45,9 @@ target_link_libraries(makeWire fssimplewindow glutil)
 add_executable(move MACOSX_BUNDLE move.cpp fileHandle.cpp fileHandle.h util.cpp util.h)
 target_link_libraries(move fssimplewindow glutil)
 
+add_executable(move2 MACOSX_BUNDLE move2.cpp fileHandle.cpp fileHandle.h util.cpp util.h)
+target_link_libraries(move2 fssimplewindow glutil)
+
 # testing file handle
 # add_executable(fileHandle MACOSX_BUNDLE fileHandle.cpp)
 

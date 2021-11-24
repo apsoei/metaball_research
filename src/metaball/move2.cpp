@@ -216,7 +216,7 @@ public:
         };
         std::vector<itscVtx> itscs;
 
-        // This is pair of which face itscVtx is and index to find it in itscVtx.
+        // This is pair of which face itscVtx is on, and index to find it in itscVtx.
         std::vector<std::pair<int,int>> itscFaceNums;
 
 
@@ -227,14 +227,13 @@ public:
         // }
 
         // 11/22/2021 UPDATE. >>>
-        class Plane
-        {
-        public:
-            num;
-            std::vector<Edge> edges {4};
-            Plane();
-        };
-        std::vector<Plane> planes {3};
+        // class Plane
+        // {
+        // public:
+        //     int num;
+        //     std::vector<Edge> edges {4};
+        // };
+        // std::vector<Plane> planes {3};
 
         // 11/22/2021 UPDATE. <<<
 
@@ -251,7 +250,7 @@ public:
             {
                 boundary=true;
                 edge.resize(12);
-                planes.resize(6);
+                // planes.resize(6);
             }
             
             edge[0].vtx1[0] = x;        edge[0].vtx1[1] = y;        edge[0].vtx1[2] = z;
@@ -425,6 +424,8 @@ public:
 
     void SearchAndModify(void);
 
+    void SearchAndMoveItsc(void);
+
     void StoreIntersections(void);
 
     
@@ -528,9 +529,21 @@ void ApplicationMain::StoreIntersections(void)
         }
 // std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
         std::vector<Cube::Edge> edges;
-        edges.push_back(edge0);edges.push_back(edge1);edges.push_back(edge2);edges.push_back(edge3);
-        edges.push_back(edge4);edges.push_back(edge5);edges.push_back(edge6);edges.push_back(edge7);
-        edges.push_back(edge8);edges.push_back(edge9);edges.push_back(edge10);edges.push_back(edge11);
+        // 11/22/2021 UPDATE. >>>
+        // edges.push_back(edge0);edges.push_back(edge1);edges.push_back(edge2);edges.push_back(edge3);
+        // edges.push_back(edge4);edges.push_back(edge5);edges.push_back(edge6);edges.push_back(edge7);
+        // edges.push_back(edge8);edges.push_back(edge9);edges.push_back(edge10);edges.push_back(edge11);
+        // myEdges -> top, bot, right, left, front, back.
+        // top:   edge 0 and 5  -> y fixed
+        // bot:   edge 9 and 11 -> y fixed
+        // right: edge 3 and 8  -> x fixed
+        // left:  edge 1 and 10 -> x fixed
+        // front: edge 0 and 9  -> z fixed
+        // back:  edge 5 and 11 -> z fixed
+        edges.push_back(edge0);edges.push_back(edge5);edges.push_back(edge9);edges.push_back(edge11);
+        edges.push_back(edge3);edges.push_back(edge8);edges.push_back(edge1);edges.push_back(edge10);
+        edges.push_back(edge0);edges.push_back(edge9);edges.push_back(edge5);edges.push_back(edge11);
+        // 11/22/2021 UPDATE. <<<
         GetIntersection(inputEdges,edges,cube);
     }
 }
@@ -695,7 +708,7 @@ std::cout<< __FUNCTION__ <<__LINE__ <<std::endl;
 std::cout<< __FUNCTION__ <<__LINE__ <<std::endl;
 printf("neiVal = %f, currVal = %f\n",neiVal,currVal);
                                 // modify with 'some' value.
-                                fvals[c[0] + valX*c[1] + valX*valY*c[2]] = neiVal;
+                                fvals[c[0] + valX*c[1] + valX*valY*c[2]] = -currVal;
                                 mod = true;
                                 break;
 
@@ -712,6 +725,35 @@ printf("neiVal = %f, currVal = %f\n",neiVal,currVal);
         }
     }
     
+}
+
+void ApplicationMain::SearchAndMoveItsc(void)
+{
+    int sequence[18] = {1,0,0, 0,0,1, -1,0,0, 0,0,-1, 
+                        0,-1,0,
+                        0,1,0};
+    for(auto idf : indexFace)
+    {
+        auto currX = idf.xi;
+        auto currY = idf.yi;
+        auto currZ = idf.zi;
+        auto currFace = idf.faceNum;
+        for(int i = 0; i<16; i+=3)
+        {
+            auto neiX = currX + sequence[i];
+            auto neiY = currY + sequence[i+1];
+            auto neiZ = currZ + sequence[i+2];
+            if(neiX<nx && neiY<ny && neiZ<nz)
+            {
+                if(true!=cubes[neiX + nx*neiY + nx*ny*neiZ].clean)
+                {
+                    
+                }
+            }
+            
+        }
+
+    }
 }
 
 
@@ -933,7 +975,8 @@ bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<
                 // dot prod
                 float dotProd = vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2];
 
-                if(dotProd <= 0)
+                
+                if(dotProd < 0) // 11/23/2021 UPDATE
                 {
                     
                     Cube::itscVtx temp;
@@ -1458,12 +1501,18 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
         //                   {1,6,10,2},
         //                   {0,2,9,4},
         //                   {5,7,11,6} };
+        // std::vector<std::vector<int>> idx = { {0,3,5,1},
+        //                                     {8,9,10,11},
+        //                                     {3,4,8,7},
+        //                                     {1,6,10,2},
+        //                                     {0,2,9,4},
+        //                                     {5,7,11,6} }; 
         std::vector<std::vector<int>> idx = { {0,3,5,1},
-                                            {8,9,10,11},
+                                            {9,8,11,10},
                                             {3,4,8,7},
-                                            {1,6,10,2},
+                                            {1,2,10,6},
                                             {0,2,9,4},
-                                            {5,7,11,6} }; 
+                                            {5,6,11,7} }; 
 
         
         std::vector<int> tempFace;
@@ -1471,6 +1520,9 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
         std::unordered_set<int> itscSet;
         std::vector<std::vector<int>> tempPair;
         
+
+
+        // LOOPING THROUGH EACH PLANE OF THE CUBE.
         int num = 0;
         for(auto plane : idx)
         {    
@@ -1502,6 +1554,7 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                     {
 // std::cout << "inserting intersection " <<std::endl;
                         inserted = true;
+                        
                         vtx3d.push_back(cube.itscs[itscIdx].x);
                         vtx3d.push_back(cube.itscs[itscIdx].y);
                         vtx3d.push_back(cube.itscs[itscIdx].z);
@@ -2937,7 +2990,7 @@ std::cout<< wid <<","<<minX <<","<<nx<<","<<xStep<<std::endl;
         std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
 
         // modify . . .
-        SearchAndModify();
+        // SearchAndModify();
         std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
 
         MarchingCube();
