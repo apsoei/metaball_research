@@ -1,6 +1,3 @@
-
-
-
 #include <vector>
 #include <stdio.h>
 #include "fssimplewindow.h"
@@ -112,11 +109,6 @@ public:
     std::vector<float> CrossProduct(std::vector<float> a, std::vector<float> b);
 
 
-    class Point
-    {
-        float x,y,z;
-    };
-
     class Line
     {
     public:
@@ -163,10 +155,6 @@ public:
         return a;
     }
 
-
-    
-
-
     class Cube
     {
     public:
@@ -178,7 +166,6 @@ public:
         // Cube *a,r,o,u,n,d;
         // Cube *next;
         
-        std::vector<bool> faceCleans {true,true,true,true,true,true};
         int xInd,yInd,zInd;
         class Edge
         {
@@ -212,36 +199,17 @@ public:
         // left: edge   1,6,10,2
         // front: edge  0,2,9,4
         // back: edge   5,7,11,6
-        class ItscVtx
+        class itscVtx
         {
         public:
             int vtident = 0;
             float x,y,z;
         };
-        std::vector<ItscVtx> itscs;
+        std::vector<itscVtx> itscs;
 
-        // This is pair of which face ItscVtx is on, and index to find it in ItscVtx.
-        // first = faceNum, second = index in itscs.
+        // This is pair of which face itscVtx is and index to find it in itscVtx.
         std::vector<std::pair<int,int>> itscFaceNums;
 
-
-
-        // face numbering scheme: top: 1 bot: 2 rig: 3 lef: 4 fro: 5 bac: 6
-        // class Face
-        // {
-
-        // }
-
-        // 11/22/2021 UPDATE. >>>
-        // class Plane
-        // {
-        // public:
-        //     int num;
-        //     std::vector<Edge> edges {4};
-        // };
-        // std::vector<Plane> planes {3};
-
-        // 11/22/2021 UPDATE. <<<
 
 
 
@@ -255,10 +223,11 @@ public:
             if(xInd==nx-1 || yInd==ny-1 || zInd==nz-1)
             {
                 boundary=true;
-                edge.resize(12);
-                // planes.resize(6);
             }
-            
+            if(true==boundary)
+            {
+                edge.resize(12);
+            }
             edge[0].vtx1[0] = x;        edge[0].vtx1[1] = y;        edge[0].vtx1[2] = z;
             edge[0].vtx2[0] = x+xStep;  edge[0].vtx2[1] = y;        edge[0].vtx2[2] = z;
             
@@ -309,15 +278,13 @@ public:
 
         }
 
-        
-
 
     };
 
     std::vector<Cube> cubes;
 
     // Cubes with intersections but no interpolation points from function values.
-    // std::vector<Cube> unusedItscCube;
+    std::vector<Cube> unusedItscCube;
 
     std::unordered_map <int, Cube> cubeMap;
 
@@ -368,19 +335,10 @@ public:
     // plane eqn: n_x * x + n_y * y + n_z * z = d
     // returns {n_x,n_y,n_z,d}
 
-    class IndexAndFace
-    {
-    public:
-        int xi,yi,zi;
-        int faceNum;
-        std::vector<Cube::ItscVtx> itsc;
-
-    };
-    std::vector<IndexAndFace> indexFace;
 
     // Update 11/1/2021: Make this return index to the cube and face number if intersection exists, else return nullptr.
-    bool GetIntersection(std::vector<Line> inputEdges, std::vector<Cube::Edge> myEdges, Cube &cube);
-    std::unordered_map<int,Point> itscTable;
+    bool getIntersection(std::vector<Line> inputEdges, std::vector<Cube::Edge> myEdges, Cube &cube);
+    std::unordered_map<int,float*> itscTable;
 
     std::vector<std::vector<int>> Split(const std::vector <int> srcPlg,const std::vector<int> split);
 
@@ -421,455 +379,8 @@ public:
     void MakeWire(float cen,int len, int t, int cubeNum);
 
 
-    // FUNCTIONS TO CHECK IF A FACE IS CLEAN BUT HAS ITSC.
-    // IF SO, LOOK FOR NEIGHBORING FACE AND FIND THE NOT CLEAN ONE AND MODIFY ONE OF THE TWO CORNER'S F-VALUE.
-
-    std::vector<Cube::Edge> GetEdgesOfFace(IndexAndFace idf);
-
-    bool CheckCleanFace(IndexAndFace idf);
-
-
-    void SearchAndModify(void);
-
-    void SearchAndMoveItsc(void);
-
-    void StoreIntersections(void);
-
-    
     
 };
-
-bool ApplicationMain::CheckCleanFace(IndexAndFace idf)
-{
-    auto fNum = idf.faceNum;
-    auto valX = nx+1;  auto valY = ny+1;  auto valZ = nz+1;
-    float v1,v2,v3,v4;
-    auto xi = idf.xi; auto yi = idf.yi; auto zi = idf.zi;
-    switch (fNum)
-    {
-    case 0:
-        v1 = fvals[xi   + valX*yi + valX*valY*zi];
-        v2 = fvals[xi+1 + valX*yi + valX*valY*zi];
-        v3 = fvals[xi+1 + valX*yi + valX*valY*(zi+1)];
-        v4 = fvals[xi   + valX*yi + valX*valY*(zi+1)];
-        break;
-    case 1:
-        v1 = fvals[xi   + valX*(yi+1) + valX*valY*zi];
-        v2 = fvals[xi+1 + valX*(yi+1) + valX*valY*zi];
-        v3 = fvals[xi+1 + valX*(yi+1) + valX*valY*(zi+1)];
-        v4 = fvals[xi   + valX*(yi+1) + valX*valY*(zi+1)];
-        break;
-    case 2:
-        v1 = fvals[xi+1 + valX*yi     + valX*valY*zi];
-        v2 = fvals[xi+1 + valX*(yi+1) + valX*valY*zi];
-        v3 = fvals[xi+1 + valX*(yi+1) + valX*valY*(zi+1)];
-        v4 = fvals[xi+1 + valX*yi     + valX*valY*(zi+1)];
-        break;
-    case 3:
-        v1 = fvals[xi + valX*yi     + valX*valY*zi];
-        v2 = fvals[xi + valX*(yi+1) + valX*valY*zi];
-        v3 = fvals[xi + valX*(yi+1) + valX*valY*(zi+1)];
-        v4 = fvals[xi + valX*yi     + valX*valY*(zi+1)];
-        break;
-    case 4:
-        v1 = fvals[xi   + valX*yi     + valX*valY*zi];
-        v2 = fvals[xi   + valX*(yi+1) + valX*valY*zi];
-        v3 = fvals[xi+1 + valX*(yi+1) + valX*valY*zi];
-        v4 = fvals[xi+1 + valX*yi     + valX*valY*zi];
-        break;
-    case 5:
-        v1 = fvals[xi   + valX*yi     + valX*valY*(zi+1)];
-        v2 = fvals[xi   + valX*(yi+1) + valX*valY*(zi+1)];
-        v3 = fvals[xi+1 + valX*(yi+1) + valX*valY*(zi+1)];
-        v4 = fvals[xi+1 + valX*yi     + valX*valY*(zi+1)];
-        break;
-    
-    
-    default:
-        break;
-    }
-
-    if( (v1<0 && v2<0 && v3<0 && v4<0) || (v1>0 && v2>0 && v3>0 && v4>0) )
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-void ApplicationMain::StoreIntersections(void)
-{
-    Cube::Edge edge0,edge1,edge2,edge3,edge4,edge5,edge6,edge7,edge8,edge9,edge10,edge11;
-    // std::cout<<"number of cubes= "<< cubes.size() <<std::endl;
-    for(auto &cube : cubes)
-    {
-        auto currX = cube.xInd;
-        auto currY = cube.yInd;
-        auto currZ = cube.zInd;
-        edge0 = cube.edge[0];
-        edge1 = cube.edge[1];
-        edge2 = cube.edge[2];
-        // get every edge for boundary cubes.
-        if(true==cube.boundary)
-        {
-// std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
-            edge3 = cube.edge[3]; edge4  = cube.edge[4];  edge5  = cube.edge[5];
-            edge6 = cube.edge[6]; edge7  = cube.edge[7];  edge8  = cube.edge[8];
-            edge9 = cube.edge[9]; edge10 = cube.edge[10]; edge11 = cube.edge[11];
-        }
-        // borrow edges from neigboring cubes.
-        else
-        {               
-
-            edge3 =    cubes[(nx)*(ny)*currZ     + (nx)*currY     + currX +1].edge[1];
-            edge4 =    cubes[(nx)*(ny)*currZ     + (nx)*currY     + currX +1].edge[2];
-            edge5 =    cubes[(nx)*(ny)*(currZ+1) + (nx)*currY     + currX   ].edge[0];
-            edge6 =    cubes[(nx)*(ny)*(currZ+1) + (nx)*currY     + currX   ].edge[2];
-            edge7 =    cubes[(nx)*(ny)*(currZ+1) + (nx)*currY     + currX +1].edge[2];
-            edge8 =    cubes[(nx)*(ny)*currZ     + (nx)*(currY+1) + currX +1].edge[1];
-            edge9 =    cubes[(nx)*(ny)*currZ     + (nx)*(currY+1) + currX   ].edge[0];
-            edge10 =   cubes[(nx)*(ny)*currZ     + (nx)*(currY+1) + currX   ].edge[1];
-            edge11 =   cubes[(nx)*(ny)*(currZ+1) + (nx)*(currY+1) + currX   ].edge[0];
-
-        }
-// std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
-        std::vector<Cube::Edge> edges;
-        // 11/22/2021 UPDATE. >>>
-        // edges.push_back(edge0);edges.push_back(edge1);edges.push_back(edge2);edges.push_back(edge3);
-        // edges.push_back(edge4);edges.push_back(edge5);edges.push_back(edge6);edges.push_back(edge7);
-        // edges.push_back(edge8);edges.push_back(edge9);edges.push_back(edge10);edges.push_back(edge11);
-        // myEdges -> top, bot, right, left, front, back.
-        // top:   edge 0 and 5  -> y fixed
-        // bot:   edge 9 and 11 -> y fixed
-        // right: edge 3 and 8  -> x fixed
-        // left:  edge 1 and 10 -> x fixed
-        // front: edge 0 and 9  -> z fixed
-        // back:  edge 5 and 11 -> z fixed
-        edges.push_back(edge0);edges.push_back(edge5);edges.push_back(edge9);edges.push_back(edge11);
-        edges.push_back(edge3);edges.push_back(edge8);edges.push_back(edge1);edges.push_back(edge10);
-        edges.push_back(edge0);edges.push_back(edge9);edges.push_back(edge5);edges.push_back(edge11);
-        // 11/22/2021 UPDATE. <<<
-        GetIntersection(inputEdges,edges,cube);
-    }
-}
-
-std::vector<ApplicationMain::Cube::Edge> ApplicationMain::GetEdgesOfFace(IndexAndFace idf)
-{
-    auto cube = cubes[idf.xi + nx*idf.yi + nx*ny*idf.zi];
-
-    std::vector<Cube::Edge> faceEds;
-
-    Cube::Edge ed0,ed1,ed2,ed3,ed4,ed5,ed6,ed7,ed8,ed9,ed10,ed11;
-
-    ed0 = cube.edge[0];
-    ed1 = cube.edge[1];
-    ed2 = cube.edge[2];
-
-    if(true==cube.boundary)
-    {
-        ed3 = cube.edge[3];ed4 = cube.edge[4];ed5 = cube.edge[5];
-        ed6 = cube.edge[6];ed7 = cube.edge[7];ed8 = cube.edge[8];
-        ed9 = cube.edge[9];ed10 = cube.edge[10];ed11 = cube.edge[11];
-    }
-    else
-    {
-        ed3  = cubes[(idf.xi+1) + nx*idf.yi     + nx*ny*idf.zi    ].edge[1];
-        ed4  = cubes[(idf.xi+1) + nx*idf.yi     + nx*ny*idf.zi    ].edge[2];
-        ed5  = cubes[ idf.xi    + nx*idf.yi     + nx*ny*(idf.zi+1)].edge[0];
-        ed6  = cubes[ idf.xi    + nx*idf.yi     + nx*ny*(idf.zi+1)].edge[2];
-        ed7  = cubes[(idf.xi+1) + nx*idf.yi     + nx*ny*(idf.zi+1)].edge[2];
-        ed8  = cubes[(idf.xi+1) + nx*(idf.yi+1) + nx*ny*idf.zi    ].edge[1];
-        ed9  = cubes[ idf.xi    + nx*(idf.yi+1) + nx*ny*idf.zi    ].edge[0];
-        ed10 = cubes[ idf.xi    + nx*(idf.yi+1) + nx*ny*idf.zi    ].edge[1];
-        ed11 = cubes[ idf.xi    + nx*(idf.yi+1) + nx*ny*(idf.zi+1)].edge[0];
-    }
-
-    int fNum = idf.faceNum;
-
-    switch (fNum)
-    {
-    case 0:
-        faceEds.push_back(ed0);faceEds.push_back(ed3);faceEds.push_back(ed5);faceEds.push_back(ed1);
-        break;
-    case 1:
-        faceEds.push_back(ed9);faceEds.push_back(ed8);faceEds.push_back(ed11);faceEds.push_back(ed10);
-        break;
-    case 2:
-        faceEds.push_back(ed3);faceEds.push_back(ed4);faceEds.push_back(ed8);faceEds.push_back(ed7);
-        break;
-    case 3:
-        faceEds.push_back(ed1);faceEds.push_back(ed2);faceEds.push_back(ed10);faceEds.push_back(ed6);
-        break;
-    case 4:
-        faceEds.push_back(ed0);faceEds.push_back(ed2);faceEds.push_back(ed9);faceEds.push_back(ed4);
-        break;
-    case 5:
-        faceEds.push_back(ed5);faceEds.push_back(ed6);faceEds.push_back(ed11);faceEds.push_back(ed7);
-        break;
-        
-    
-    // default:
-    //     break;
-    }
-
-    return faceEds;
-    
-    
-}
-
-void ApplicationMain::SearchAndModify(void)
-{
-    std::vector<std::vector<int>> corners {4};
-
-    auto valX = nx+1;
-    auto valY = ny+1;
-    auto valZ = nz+1;
-
-    int sequence[18] = {1,0,0, 0,0,1, 
-                       -1,0,0, 0,0,-1, 
-                        0,-1,0,
-                        0,1,0};
-std::cout<< __FUNCTION__ <<__LINE__ <<std::endl;
-printf("indexFace size: %d\n",indexFace.size());
-
-    for(auto idf : indexFace)
-    {
-std::cout<< __FUNCTION__ <<__LINE__ <<std::endl;
-        bool clean = CheckCleanFace(idf);
-
-        // TO DO :
-        // This face has intersection points but has same f-values on all corners.
-        // So now we look for neighboring nodes of each corner and find the one with different sign.
-        // When we find one, we change the current node to same sign with the neighbor node. 
-        // To what value?
-        if(true==clean)
-        {
-            auto fNum = idf.faceNum;
-
-            switch (fNum)
-            {
-            case 0:
-                corners[0] = {idf.xi  ,idf.yi,idf.zi};
-                corners[1] = {idf.xi+1,idf.yi,idf.zi};
-                corners[2] = {idf.xi+1,idf.yi,idf.zi+1};
-                corners[3] = {idf.xi  ,idf.yi,idf.zi+1};
-                break;
-            case 1:
-                corners[0] = {idf.xi  ,idf.yi+1,idf.zi};
-                corners[1] = {idf.xi+1,idf.yi+1,idf.zi};
-                corners[2] = {idf.xi+1,idf.yi+1,idf.zi+1};
-                corners[3] = {idf.xi  ,idf.yi+1,idf.zi+1};
-                break;
-            case 2:
-                corners[0] = {idf.xi+1,idf.yi,  idf.zi};
-                corners[1] = {idf.xi+1,idf.yi+1,idf.zi};
-                corners[2] = {idf.xi+1,idf.yi+1,idf.zi+1};
-                corners[3] = {idf.xi+1,idf.yi,  idf.zi+1};
-                break;
-            case 3:
-                corners[0] = {idf.xi,idf.yi,  idf.zi};
-                corners[1] = {idf.xi,idf.yi+1,idf.zi};
-                corners[2] = {idf.xi,idf.yi+1,idf.zi+1};
-                corners[3] = {idf.xi,idf.yi,  idf.zi+1};
-                break;
-            case 4:
-                corners[0] = {idf.xi,  idf.yi,  idf.zi};
-                corners[1] = {idf.xi,  idf.yi+1,idf.zi};
-                corners[2] = {idf.xi+1,idf.yi+1,idf.zi};
-                corners[3] = {idf.xi+1,idf.yi,  idf.zi};
-                break;
-            case 5:
-                corners[0] = {idf.xi,  idf.yi,  idf.zi+1};
-                corners[1] = {idf.xi,  idf.yi+1,idf.zi+1};
-                corners[2] = {idf.xi+1,idf.yi+1,idf.zi+1};
-                corners[3] = {idf.xi+1,idf.yi,  idf.zi+1};
-                break;
-
-            
-            // default:
-            //     break;
-            }
-
-            bool mod = false;
-
-            for(auto c : corners)
-            {
-                if(true!=mod)
-                {
-                    // check in-bound of fval array
-                    auto currVal = fvals[c[0] + valX*c[1] + valX*valY*c[2]];
-                    for(int i = 0; i<sizeof(sequence)/sizeof(sequence[0]) -2; i+=3)
-                    {
-
-                        auto neiX = c[0]+sequence[i];
-                        auto neiY = c[1]+sequence[i+1];
-                        auto neiZ = c[2]+sequence[i+2];
-                        if(neiX < valX && neiY <valY && neiZ <valZ)
-                        {
-                            auto neiVal = fvals[neiX + valX*neiY + valX*valY*neiZ];
-
-                            // found neighboring node with different sign.
-                            if(neiVal*currVal < 0)
-                            {
-
-printf("neiVal = %f, currVal = %f\n",neiVal,currVal);
-                                // modify with 'some' value.
-                                float assign = (currVal+neiVal)/2;
-                                // if(fabs(assign)<0.0000000001)
-                                // {
-                                //     assign = 0.0000001;
-                                // }
-                                fvals[c[0] + valX*c[1] + valX*valY*c[2]] = assign;
-                                mod = true;
-                                break;
-
-                            }
-                        }
-                    }
-                }
-                
-                
-            }
-
-
-            
-        }
-    }
-    
-}
-
-void ApplicationMain::SearchAndMoveItsc(void)
-{
-    // moving in directions: N,S,E,W,UP,DOWN.
-    int sequence[18] = {1,0,0, 0,0,1, -1,0,0, 0,0,-1, 
-                        0,-1,0,
-                        0,1,0};
-    auto valX = nx+1;
-    auto valY = ny+1;
-    auto valZ = nz+1;
-
-    for(auto idf : indexFace)
-    {
-        auto currX = idf.xi;
-        auto currY = idf.yi;
-        auto currZ = idf.zi;
-        auto currFace = idf.faceNum;
-        auto currItsc = idf.itsc[0];
-
-        bool moved = false;
-        for(int i = 0; i<16; i+=3)
-        {
-            if(true!=moved)
-            {
-                auto neiXi = currX + sequence[i];
-                auto neiYi = currY + sequence[i+1];
-                auto neiZi = currZ + sequence[i+2];
-                if(neiXi<nx && neiYi<ny && neiZi<nz)
-                {
-                    int fNum = currFace;
-                    std::vector<std::vector<int>> corners {4};
-
-                    switch (fNum)
-                    {
-                    case 0:
-                        corners[0] = {neiXi  ,neiYi,neiZi};
-                        corners[1] = {neiXi+1,neiYi,neiZi};
-                        corners[2] = {neiXi+1,neiYi,neiZi+1};
-                        corners[3] = {neiXi  ,neiYi,neiZi+1};
-                        break;
-                    case 1:
-                        corners[0] = {neiXi  ,neiYi+1,neiZi};
-                        corners[1] = {neiXi+1,neiYi+1,neiZi};
-                        corners[2] = {neiXi+1,neiYi+1,neiZi+1};
-                        corners[3] = {neiXi  ,neiYi+1,neiZi+1};
-                        break;
-                    case 2:
-                        corners[0] = {neiXi+1,neiYi,  neiZi};
-                        corners[1] = {neiXi+1,neiYi+1,neiZi};
-                        corners[2] = {neiXi+1,neiYi+1,neiZi+1};
-                        corners[3] = {neiXi+1,neiYi,  neiZi+1};
-                        break;
-                    case 3:
-                        corners[0] = {neiXi,neiYi,  neiZi};
-                        corners[1] = {neiXi,neiYi+1,neiZi};
-                        corners[2] = {neiXi,neiYi+1,neiZi+1};
-                        corners[3] = {neiXi,neiYi,  neiZi+1};
-                        break;
-                    case 4:
-                        corners[0] = {neiXi,  neiYi,  neiZi};
-                        corners[1] = {neiXi,  neiYi+1,neiZi};
-                        corners[2] = {neiXi+1,neiYi+1,neiZi};
-                        corners[3] = {neiXi+1,neiYi,  neiZi};
-                        break;
-                    case 5:
-                        corners[0] = {neiXi,  neiYi,  neiZi+1};
-                        corners[1] = {neiXi,  neiYi+1,neiZi+1};
-                        corners[2] = {neiXi+1,neiYi+1,neiZi+1};
-                        corners[3] = {neiXi+1,neiYi,  neiZi+1};
-                        break;    
-                    }
-                    
-                    auto v0 = fvals[corners[0][0] + valX*corners[0][1] + valX*valY*corners[0][2]];
-                    auto v1 = fvals[corners[1][0] + valX*corners[1][1] + valX*valY*corners[1][2]];
-                    auto v2 = fvals[corners[2][0] + valX*corners[2][1] + valX*valY*corners[2][2]];
-                    auto v3 = fvals[corners[3][0] + valX*corners[3][1] + valX*valY*corners[3][2]];
-
-                    bool hasItsc = false;
-                    for(auto fId : cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscFaceNums)
-                    {
-                        if(fId.first == fNum)
-                        {
-                            hasItsc = true;
-                        }
-                    }
-                    // want to find not clean face.
-                    if( (v0>0 && v1>0 && v2>0 && v3>0) ||
-                        (v0<0 && v1<0 && v2<0 && v3<0) )
-                        {
-                        }
-
-                    // NOT CLEAN AND HAS NO INTERSECTIONS.   
-                    else if(true!=hasItsc)
-                    {
-                        auto movedItsc = currItsc;
-                        switch(i)
-                        {
-                            case 0:
-                                movedItsc.x+=xStep;
-                                break;
-                            case 3:
-                                movedItsc.z+=zStep;
-                                break;
-                            case 6:
-                                movedItsc.x-=xStep;
-                                break;
-                            case 9:
-                                movedItsc.z-=zStep;
-                                break;
-                            case 12:
-                                movedItsc.y-=yStep;
-                                break;
-                            case 15:
-                                movedItsc.y+=yStep;
-                                break;
-
-                        }
-                        cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscs.push_back(movedItsc);
-                        int itscSize = cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscs.size();
-                        cubes[neiXi + nx*neiYi + nx*ny*neiZi].itscFaceNums.push_back(std::make_pair(fNum,itscSize-1));
-                        moved = true;
-                        break;
-                    }
-                }
-
-            }
-
-        }
-    }
-}
-
 
 void ApplicationMain::MakeWire(float cen,int len, int t, int cubeNum)
 {
@@ -945,7 +456,7 @@ void ApplicationMain::saveItscForDebug(void)
                 intersectionsVtx.push_back(vtx.x);
                 intersectionsVtx.push_back(vtx.y);
                 intersectionsVtx.push_back(vtx.z);
-                intersectionsCol.push_back(0.5);intersectionsCol.push_back(0.5);intersectionsCol.push_back(0.5);intersectionsCol.push_back(1);
+                intersectionsCol.push_back(1);intersectionsCol.push_back(0);intersectionsCol.push_back(1);intersectionsCol.push_back(1);
             }
         }
     }
@@ -997,7 +508,7 @@ int ApplicationMain::whichCubeFromPoly(std::vector<std::vector<float>> polyVert)
 
 }
 
-bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<Cube::Edge> myEdges, Cube &cube)
+bool ApplicationMain::getIntersection(std::vector<Line> inputEdges, std::vector<Cube::Edge> myEdges, Cube &cube)
 {
     // myEdges -> top, bot, right, left, front, back.
     // top:   edge 0 and 5  -> y fixed
@@ -1034,7 +545,7 @@ bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<
 
         for(auto line : inputEdges)
         {
-            // face numbering scheme: top: 0 bot: 1 rig: 2 lef: 3 fro: 4 bac: 5
+            // face numbering scheme: top: 1 bot: 2 rig: 3 lef: 4 fro: 5 bac: 6
 
 
             // top:   edge 0 and 5  -> y fixed
@@ -1089,11 +600,10 @@ bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<
                 // dot prod
                 float dotProd = vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2];
 
-                
-                if(dotProd < 0) // 11/23/2021 UPDATE
+                if(dotProd <= 0)
                 {
                     
-                    Cube::ItscVtx temp;
+                    Cube::itscVtx temp;
                     temp.x = x; 
                     temp.y = y;
                     temp.z = z;
@@ -1101,28 +611,18 @@ bool ApplicationMain::GetIntersection(std::vector<Line> inputEdges, std::vector<
                     cube.itscFaceNums.push_back(std::make_pair(face, cube.itscs.size()-1));
                     has = true;
 
-                    IndexAndFace idf;
-                    idf.xi = cube.xInd; idf.yi = cube.yInd; idf.zi = cube.zInd;
-                    idf.faceNum = face;
-                    idf.itsc.push_back(temp);
+                    // FOR INSETING INTO HASHTABLE OF ITSCS.
+                    // xInd   + yInd*valX     + zInd*valX*valY]
+                    int key = 3* (cube.xInd + nx*cube.yInd + nx*ny*cube.zInd) + 5*face;
+                    float val[3] = {x,y,z};
+                    if(itscTable.find(key)==itscTable.end())
+                    {
 std::cout<< __FUNCTION__ << __LINE__ <<std::endl;
 
-                    indexFace.push_back(idf);
+                        itscTable.insert({key,val});
 
-printf("indexFace size: %d\n",indexFace.size());
-                    // FOR INSETING INTO HASHTABLE OF ITSCS.
-                    
-                    // int key = 6* (cube.xInd + nx*cube.yInd + nx*ny*cube.zInd) + face;
-                    // Point pt;
-                    // pt.x = 
-                    // if(itscTable.find(key)==itscTable.end())
-                    // {
-// std::cout<< __FUNCTION__ << __LINE__ <<std::endl;
-
-                        // itscTable.insert({key,pt});
-
-// std::cout<< " Checking insert into hashtable" <<std::endl;
-                    // }
+std::cout<< " Checking insert into hashtable" <<std::endl;
+                    }
 
 
                     break;
@@ -1133,16 +633,13 @@ printf("indexFace size: %d\n",indexFace.size());
             }
         }
     }
-std::cout<< __FUNCTION__ << __LINE__ <<std::endl;
 
-//     if(true==foundWhichCube)
-//     {
-// std::cout<<__FUNCTION__ <<__LINE__<<std::endl;
-// std::cout<<cube.itscs.size()<<std::endl;
-//         // printf(__FUNCTION____LINE__);
-//     }
-
-std::cout<< __FUNCTION__ << __LINE__ <<std::endl;
+    if(true==foundWhichCube)
+    {
+std::cout<<__FUNCTION__ <<__LINE__<<std::endl;
+std::cout<<cube.itscs.size()<<std::endl;
+        // printf(__FUNCTION____LINE__);
+    }
 
     return has;
     
@@ -1395,14 +892,14 @@ std::cout<<__FUNCTION__<<__LINE__<<std::endl;
             yi++;
 
         }
-
+std::cout<<__FUNCTION__<<__LINE__<<std::endl;
         
         zi++;
 
         zc++;
         
     }
-
+std::cout<<__FUNCTION__<<__LINE__<<std::endl;
 // std::cout<<xc << "," <<yc<< ","<<zc<<std::endl;
 }
 
@@ -1462,7 +959,7 @@ void ApplicationMain::StoreVtx3d(void)
             edge11 =   cubes[(nx)*(ny)*(currZ+1) + (nx)*(currY+1) + currX   ].edge[0];
 
         }
-std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
+// std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
         std::vector<Cube::Edge> edges;
         edges.push_back(edge0);edges.push_back(edge1);edges.push_back(edge2);edges.push_back(edge3);
         edges.push_back(edge4);edges.push_back(edge5);edges.push_back(edge6);edges.push_back(edge7);
@@ -1494,47 +991,48 @@ std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
 // std::cout << "FINDING WHICH CUBE . . ."<< std::endl;
 // std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
             // intersection and interpolation points of current cube in 1-D vector.
-            
-            for(int p= 0; p<polyVert.size(); ++p)
+            float avgX = 0,avgY = 0,avgZ = 0;
+            for(auto p : polyVert)
             {
-                float avgX = 0,avgY = 0,avgZ = 0;
+                avgX+=p[0];
+                avgY+=p[1];
+                avgZ+=p[2];
+            }
 
-                for(int i = 0; i<polyVert[p].size()/3; ++i)
-                {
-printf("current index i: %d\n",i);
-printf("Accessing each point:(%f,%f,%f)\n",polyVert[p][3*i],polyVert[p][3*i+1],polyVert[p][3*i+2]);
-                    avgX+=polyVert[p][3*i];
-                    avgY+=polyVert[p][3*i+1];
-                    avgZ+=polyVert[p][3*i+2];
-                }
-                avgX/=polyVert[p].size()/3;
-                avgY/=polyVert[p].size()/3;
-                avgZ/=polyVert[p].size()/3;
+            avgX/=polyVert.size();
+            avgY/=polyVert.size();
+            avgZ/=polyVert.size();
 
 
-                
-                auto minX = cube.edge[0].vtx1[0];
-                auto maxX = cube.edge[0].vtx2[0];
+            
+            auto minX = cube.edge[0].vtx1[0];
+            auto maxX = cube.edge[0].vtx2[0];
 
-                auto minY = cube.edge[2].vtx1[1];
-                auto maxY = cube.edge[2].vtx2[1];
+            auto minY = cube.edge[2].vtx1[1];
+            auto maxY = cube.edge[2].vtx2[1];
 
-                auto minZ = cube.edge[1].vtx1[2];
-                auto maxZ = cube.edge[1].vtx2[2];
+            auto minZ = cube.edge[1].vtx1[2];
+            auto maxZ = cube.edge[1].vtx2[2];
 
-                if(avgX >= minX && avgX <= maxX &&
-                avgY >= minY && avgY <= maxY &&
-                avgZ >= minZ && avgZ <= maxZ)
-                {
+
+
+
+            
+
+            if(avgX >= minX && avgX <= maxX &&
+               avgY >= minY && avgY <= maxY &&
+               avgZ >= minZ && avgZ <= maxZ)
+               {
 std::cout << "FOUND ! ! ! ! ! !"<< std::endl;
-                    foundWhichCube = true;
+                   foundWhichCube = true;
 printf("-+-+-+-+-+-+-+-+-+-+-+\n");
 printf("cube min =          (%f, %f, %f)\n",minX,minY,minZ);
 printf("point of interest = (%f, %f, %f)\n",avgX,avgY,avgZ);
 printf("cube max =          (%f, %f, %f)\n",maxX,maxY,maxZ);
-                    debugCubeCen[0] = (minX + maxX) / 2;
-                    debugCubeCen[1] = (minY + maxY) / 2;
-                    debugCubeCen[2] = (minZ + maxZ) / 2;
+
+            debugCubeCen[0] = (minX + maxX) / 2;
+            debugCubeCen[1] = (minY + maxY) / 2;
+            debugCubeCen[2] = (minZ + maxZ) / 2;
 printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                     for(auto e : edges)
                     {
@@ -1546,23 +1044,11 @@ printf("%f,%f,%f\n",debugCubeCen[0],debugCubeCen[1],debugCubeCen[2]);
                         highVtx.push_back(vt2[0]); highVtx.push_back(vt2[1]); highVtx.push_back(vt2[2]);
                         highCol.push_back(1);highCol.push_back(0);highCol.push_back(0);highCol.push_back(1);
 
-                    }
-                    if(polyVert.size()>1)
-                    {
-                        polyVert.erase(polyVert.begin() + p);
-std::cout <<__FUNCTION__<<__LINE__<< std::endl;
-                    }
-                    else
-                    {
-                        polyVert.clear();
-std::cout <<__FUNCTION__<<__LINE__<< std::endl;
+
+                        
                     }
 
-                }
-                
-            }
-
-            
+               }
             
 
 
@@ -1574,19 +1060,19 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
         // FOR DEBUGGING . . . . . . . . . . . .
 
 // ''' GETTING PLANE - LINE INTERSECTION >>>>>>>>>>> GETTING PLANE - LINE INTERSECTION >>>>>>>>>>> GETTING PLANE - LINE INTERSECTION >>>>>>>>>>> '''
-        // bool hasItsc;
-        // if(inputEdges.size()>0)
-        // {
-        //     // top:   edge 0 and 5  -> y fixed
-        //     // bot:   edge 9 and 11 -> y fixed
-        //     // right: edge 3 and 8  -> x fixed
-        //     // left:  edge 1 and 10 -> x fixed
-        //     // front: edge 0 and 9  -> z fixed
-        //     // back:  edge 5 and 11 -> z fixed
+        bool hasItsc;
+        if(inputEdges.size()>0)
+        {
+            // top:   edge 0 and 5  -> y fixed
+            // bot:   edge 9 and 11 -> y fixed
+            // right: edge 3 and 8  -> x fixed
+            // left:  edge 1 and 10 -> x fixed
+            // front: edge 0 and 9  -> z fixed
+            // back:  edge 5 and 11 -> z fixed
             
-        //     hasItsc = GetIntersection(inputEdges,{edge0,edge5,edge9,edge11,edge3,edge8,edge1,edge10,edge0,edge9,edge5,edge11},cube);
+            hasItsc = getIntersection(inputEdges,{edge0,edge5,edge9,edge11,edge3,edge8,edge1,edge10,edge0,edge9,edge5,edge11},cube);
             
-        // }
+        }
 
 
 
@@ -1596,6 +1082,7 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
 
         // Find which side of the cube the intersection happened.
       
+// std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
         // top    (0): edge  0,3,5,1
         // bottom (1): edge  8,9,10,11
         // right  (2): edge  3,4,8,7
@@ -1616,28 +1103,44 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
         //                   {1,6,10,2},
         //                   {0,2,9,4},
         //                   {5,7,11,6} };
-        // std::vector<std::vector<int>> idx = { {0,3,5,1},
-        //                                     {8,9,10,11},
-        //                                     {3,4,8,7},
-        //                                     {1,6,10,2},
-        //                                     {0,2,9,4},
-        //                                     {5,7,11,6} }; 
         std::vector<std::vector<int>> idx = { {0,3,5,1},
-                                            {9,8,11,10},
+                                            {8,9,10,11},
                                             {3,4,8,7},
-                                            {1,2,10,6},
+                                            {1,6,10,2},
                                             {0,2,9,4},
-                                            {5,6,11,7} }; 
+                                            {5,7,11,6} }; 
 
         
         std::vector<int> tempFace;
         std::vector<bool> isItscVtx;
         std::unordered_set<int> itscSet;
         std::vector<std::vector<int>> tempPair;
+        // if(cube.itscs.size()==2)
+        // {
+            
+        //     objVtx.push_back(cube.itscs[0].x);
+        //     objVtx.push_back(cube.itscs[0].y);
+        //     objVtx.push_back(cube.itscs[0].z);
+        //     if(cube.itscs[0].vtident == 0)
+        //     {
+        //         cube.itscs[0].vtident = vtIdent;
+        //         vtIdent++;
+        //     }
+        //     objVtx.push_back(cube.itscs[1].x);
+        //     objVtx.push_back(cube.itscs[1].y);
+        //     objVtx.push_back(cube.itscs[1].z);
+        //     if(cube.itscs[1].vtident == 0)
+        //     {
+        //         cube.itscs[1].vtident = vtIdent;
+        //         vtIdent++;
+        //     }
+
+        //     tempFace.push_back(cube.itscs[0].vtident);
+        //     tempFace.push_back(cube.itscs[1].vtident);
+        //     tempFace.push_back(cube.itscs[0].vtident);
+        //     tempFace.push_back(cube.itscs[1].vtident);
+        // }
         
-
-
-        // LOOPING THROUGH EACH PLANE OF THE CUBE.
         int num = 0;
         for(auto plane : idx)
         {    
@@ -1665,11 +1168,10 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                 if(flags[e] == false)
                 {
 
-                    if(true==hasFirst && true==itsc_exist && true!=inserted && cube.itscs.size()>1)
+                    if(true==hasFirst && true==itsc_exist && true!=inserted)
                     {
 // std::cout << "inserting intersection " <<std::endl;
                         inserted = true;
-                        
                         vtx3d.push_back(cube.itscs[itscIdx].x);
                         vtx3d.push_back(cube.itscs[itscIdx].y);
                         vtx3d.push_back(cube.itscs[itscIdx].z);
@@ -1692,10 +1194,10 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                         tempFace.push_back(cube.itscs[itscIdx].vtident);
 
 // TODO: GET BACK TO THIS . > > >
-                        if(itscSet.find(cube.itscs[itscIdx].vtident) == itscSet.end())
-                        {
+                        // if(itscSet.find(cube.itscs[itscIdx].vtident) == itscSet.end())
+                        // {
                             itscSet.insert(cube.itscs[itscIdx].vtident);
-                        }
+                        // }
                         isItscVtx.push_back(true);
                         isItscVtx.push_back(true);
                         
@@ -1729,50 +1231,82 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                     
 
 // std::cout << "current idx in false flag loop: " << e <<std::endl;
-
+                    
+                        
                 }
             }
             
 // std::cout << "one plane done "<<std::endl;
             num++;
             
+            // if(flags[i]==false)
+            // {
+                
+            //     // FOR RENDERING.
+            //     vtx3d.push_back(edges[i].interp[0]);
+            //     vtx3d.push_back(edges[i].interp[1]);
+            //     vtx3d.push_back(edges[i].interp[2]);
+            //     col3d.push_back(0);col3d.push_back(0);col3d.push_back(1);col3d.push_back(1);
+
+            //     // FOR SAVING TO OBJ
+            //     if(0==edges[i].vtIdent)
+            //     {
+            //         objVtx.push_back(edges[i].interp[0]);
+            //         objVtx.push_back(edges[i].interp[1]);
+            //         objVtx.push_back(edges[i].interp[2]);
+            //         edges[i].vtIdent=vtIdent;
+            //         vtIdent++;
+            //     }
+
+
+                
+            //     tempFace.push_back(edges[i].vtIdent);
+                
+            // }
         }
 
 
 
 
+// std::cout << __FUNCTION__<<"--------"<< __LINE__<<std::endl;
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if(tempFace.size()>0)
         {
-            std::cout<< "printing tempFace . . . \n";
+            // std::cout<< "printing tempFace . . . \n";
             for(int i=0; i<tempFace.size()-1; i+=2)
             {
-                std::cout<< tempFace[i] <<","<< tempFace[i+1] <<std::endl;
+                // std::cout<< tempFace[i] <<","<< tempFace[i+1] <<std::endl;
                 tempPair.push_back({tempFace[i],tempFace[i+1]});
             }
         }
-        // else if(true==hasItsc)
-        // {
-        //     unusedItscCube.push_back(cube);
-        // }
+        else if(true==hasItsc)
+        {
+            unusedItscCube.push_back(cube);
+        }
+// std::cout << __FUNCTION__<<"--------"<< __LINE__<<std::endl;
         auto edgeSet = tempPair;
-
+// std::cout << "--------"<< std::endl;
+// std::cout << "--------"<< std::endl;
+// std::cout << "--------"<< std::endl;
+// std::cout << "--------"<< std::endl;
+// std::cout << __FUNCTION__<<"--------"<< __LINE__<<std::endl;
 
         // Unmodified initial polygon.
         std::vector<int> plg;
 
-        std::vector<std::vector<int>> totalPlg;
-
         while(edgeSet.size()>0)
         {
-            plg.clear();
             auto e = edgeSet[0];
             edgeSet.erase(edgeSet.begin());
             int init = e[0];
             int common = e[1];
             auto current = e;
-                    
+            
+            
             // if(itscSet.size()==0)
             if(itscSet.size()<2)
             {
@@ -1780,12 +1314,10 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
             }
             
             plg.push_back(init);
-    
-            bool loop = false;
-            // TODO
-            // Id:-1 (key:5235) (6.960583000000, 1.680433000000, -1.524185000000)
-            // Id:-1 (key:5238) (6.960583000000, 1.276537000000, -1.120289000000)
+            
+            
 
+            bool loop = false;
             while(false==loop)
             {
                 for(int i =0; i<edgeSet.size(); ++i)
@@ -1799,7 +1331,9 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                             objFace.push_back(common);
                         }
                         plg.push_back(common);
-
+                        
+                        
+                        
                         common = edgeSet[i][1];
                         current = edgeSet[i];
                         
@@ -1813,7 +1347,6 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                             {
                                 objFace.push_back(0);
                             }
-                            totalPlg.push_back(plg);
                             
                             // objFace.push_back(init);
                             break;
@@ -1841,7 +1374,6 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                             {
                                 objFace.push_back(0);
                             }
-                            totalPlg.push_back(plg);
                             // plg.push_back(0);
                             // objFace.push_back(init);
                             break;
@@ -1852,12 +1384,9 @@ std::cout <<__FUNCTION__<<__LINE__<< std::endl;
                     
                 }
             }
-std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
             
             
         }
-
-std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
         if(true == foundWhichCube)
         {
             printf("The cube which given polygon is from has following interpolation points >\n");
@@ -1872,28 +1401,18 @@ std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
                 printf("%f,%f,%f\n",itscVt.x,itscVt.y,itscVt.z);
             }
 
-            for(auto onePlg : totalPlg)
+            for(int i = 0; i< plg.size(); ++i)
             {
-                for(int i = 0; i< onePlg.size(); ++i)
-                {
-                    highVtx.push_back(objVtx[3*onePlg[i%onePlg.size()]-3]);
-                    highVtx.push_back(objVtx[3*onePlg[i%onePlg.size()]-2]);
-                    highVtx.push_back(objVtx[3*onePlg[i%onePlg.size()]-1]);
-                    highCol.push_back(0);highCol.push_back(0);highCol.push_back(0);highCol.push_back(1);
-                    highVtx.push_back(objVtx[3*onePlg[(i+1)%onePlg.size()]-3]);
-                    highVtx.push_back(objVtx[3*onePlg[(i+1)%onePlg.size()]-2]);
-                    highVtx.push_back(objVtx[3*onePlg[(i+1)%onePlg.size()]-1]);
-                    highCol.push_back(0);highCol.push_back(0);highCol.push_back(0);highCol.push_back(1);
-                }
-                
+                highVtx.push_back(objVtx[3*plg[i%plg.size()]-3]);
+                highVtx.push_back(objVtx[3*plg[i%plg.size()]-2]);
+                highVtx.push_back(objVtx[3*plg[i%plg.size()]-1]);
+                highCol.push_back(0);highCol.push_back(1);highCol.push_back(0);highCol.push_back(1);
+                highVtx.push_back(objVtx[3*plg[(i+1)%plg.size()]-3]);
+                highVtx.push_back(objVtx[3*plg[(i+1)%plg.size()]-2]);
+                highVtx.push_back(objVtx[3*plg[(i+1)%plg.size()]-1]);
+                highCol.push_back(0);highCol.push_back(1);highCol.push_back(0);highCol.push_back(1);
             }
 
-            printf("printing polygon f's\n");
-            for(int f : plg)
-            {
-                printf("%d ",f);
-            }
-            printf("\n");
 
 
             foundWhichCube = false;
@@ -1909,23 +1428,19 @@ std::cout << __FUNCTION__ << " ---- " <<__LINE__<< std::endl;
 // std::cout<<spl<<std::endl;
                 splits.push_back(spl);
             }
-            for(auto onePlg : totalPlg)
-            {
-                auto splitPlgs = Split(onePlg,splits);
-                // std::cout << __FUNCTION__ << " - - - - - - - - - -" <<__LINE__<< std::endl;
-                for(auto pl : splitPlgs)
-                {
-                    for(int p : pl)
-                    {
-                        // std::cout<< p <<"-";
-                        objFace.push_back(p);
-                    }
-                    // std::cout<<std::endl;
-                    objFace.push_back(0);
-                }
+            auto splitPlgs = Split(plg,splits);
 // std::cout << __FUNCTION__ << " - - - - - - - - - -" <<__LINE__<< std::endl;
+            for(auto pl : splitPlgs)
+            {
+                for(int p : pl)
+                {
+                    // std::cout<< p <<"-";
+                    objFace.push_back(p);
+                }
+                // std::cout<<std::endl;
+                objFace.push_back(0);
             }
-            
+// std::cout << __FUNCTION__ << " - - - - - - - - - -" <<__LINE__<< std::endl;
         }
         
 
@@ -2085,33 +1600,38 @@ void ApplicationMain::MarchingCube(void)
     auto valX = nx+1;
     auto valY = ny+1;
     auto valZ = nz+1;
-
-    // for(int i = 0; i<cubes.size(); ++i)
-    for(auto &cb : cubes)
+    for(int i = 0; i<cubes.size(); ++i)
     {
         
         if(true==fromFile)
         {
 
-            auto xInd = cb.xInd;
-            auto yInd = cb.yInd;
-            auto zInd = cb.zInd;
-
+        
+        
+            // auto xInd = i%nx;
+            // auto yInd = (i%(nx*ny) - xInd)/nx;
+            // auto zInd = (i - xInd - yInd*nx) / (nx*ny);
+            auto xInd = cubes[i].xInd;
+            auto yInd = cubes[i].yInd;
+            auto zInd = cubes[i].zInd;
+// std::cout<<__FUNCTION__<<__LINE__<<std::endl;
+// std::cout << "checking indices = " << xInd <<","<<yInd<<","<<zInd<<std::endl;
+// std::cout<< "fval size = " <<fvals.size() <<std::endl;
 
             valA = fvals[xInd   + yInd*valX     + zInd*valX*valY];    
             valB = fvals[xInd+1 + yInd*valX     + zInd*valX*valY];
             valC = fvals[xInd   + yInd*valX     + (zInd+1)*valX*valY];
             valD = fvals[xInd   + (yInd+1)*valX + zInd*valX*valY];
-            if(0 < valA && 0 < valB || 0 > valA && 0 > valB) cb.edge[0].clean = true;
+            if(0 < valA && 0 < valB || 0 > valA && 0 > valB) cubes[i].edge[0].clean = true;
             else
             {
 
-                cb.edge[0].val1 = valA;
-                cb.edge[0].val2 = valB;
-                auto vtx = linear_interp(cb.edge[0]);
-                cb.edge[0].interp[0] = vtx[0];
-                cb.edge[0].interp[1] = vtx[1];
-                cb.edge[0].interp[2] = vtx[2];
+                cubes[i].edge[0].val1 = valA;
+                cubes[i].edge[0].val2 = valB;
+                auto vtx = linear_interp(cubes[i].edge[0]);
+                cubes[i].edge[0].interp[0] = vtx[0];
+                cubes[i].edge[0].interp[1] = vtx[1];
+                cubes[i].edge[0].interp[2] = vtx[2];
 
 
                 // interpVtx.push_back(vtx[0]);interpVtx.push_back(vtx[1]);interpVtx.push_back(vtx[2]);
@@ -2120,16 +1640,16 @@ void ApplicationMain::MarchingCube(void)
 
             }
             
-            if(0 < valA && 0 < valC || 0 > valA && 0 > valC) cb.edge[1].clean = true;
+            if(0 < valA && 0 < valC || 0 > valA && 0 > valC) cubes[i].edge[1].clean = true;
             else
             {
 
-                cb.edge[1].val1 = valA;
-                cb.edge[1].val2 = valC;
-                auto vtx = linear_interp(cb.edge[1]);
-                cb.edge[1].interp[0] = vtx[0];
-                cb.edge[1].interp[1] = vtx[1];
-                cb.edge[1].interp[2] = vtx[2];
+                cubes[i].edge[1].val1 = valA;
+                cubes[i].edge[1].val2 = valC;
+                auto vtx = linear_interp(cubes[i].edge[1]);
+                cubes[i].edge[1].interp[0] = vtx[0];
+                cubes[i].edge[1].interp[1] = vtx[1];
+                cubes[i].edge[1].interp[2] = vtx[2];
                 
 
 
@@ -2137,15 +1657,15 @@ void ApplicationMain::MarchingCube(void)
                 // interpCol.push_back(0);interpCol.push_back(1);interpCol.push_back(0);interpCol.push_back(1);
  
             }
-            if(0 < valA && 0 < valD || 0 >valA && 0 >valD) cb.edge[2].clean = true;
+            if(0 < valA && 0 < valD || 0 >valA && 0 >valD) cubes[i].edge[2].clean = true;
             else
             {
-                cb.edge[2].val1 = valA;
-                cb.edge[2].val2 = valD;
-                auto vtx = linear_interp(cb.edge[2]);
-                cb.edge[2].interp[0] = vtx[0];
-                cb.edge[2].interp[1] = vtx[1];
-                cb.edge[2].interp[2] = vtx[2];
+                cubes[i].edge[2].val1 = valA;
+                cubes[i].edge[2].val2 = valD;
+                auto vtx = linear_interp(cubes[i].edge[2]);
+                cubes[i].edge[2].interp[0] = vtx[0];
+                cubes[i].edge[2].interp[1] = vtx[1];
+                cubes[i].edge[2].interp[2] = vtx[2];
 
 
                 // interpVtx.push_back(vtx[0]);interpVtx.push_back(vtx[1]);interpVtx.push_back(vtx[2]);
@@ -2153,102 +1673,102 @@ void ApplicationMain::MarchingCube(void)
 
             }        
             
-            if(true==cb.boundary)
+            if(true==cubes[i].boundary)
             { 
-// std::cout << "CHECKING boundary cube edge size= " << cb.edge.size() <<std::endl;
+// std::cout << "CHECKING boundary cube edge size= " << cubes[i].edge.size() <<std::endl;
                 A1 = fvals[xInd+1   + (yInd+1)*valX     + (zInd+1)*valX*valY];
                 B1 = fvals[xInd+1   + (yInd+1)*valX     +  zInd   *valX*valY];
                 C1 = fvals[xInd+1   +  yInd   *valX     + (zInd+1)*valX*valY];
                 D1 = fvals[xInd     + (yInd+1)*valX     + (zInd+1)*valX*valY];
-                if(0<valB && 0<C1 || 0>valB && 0>C1) cb.edge[3].clean = true;
+                if(0<valB && 0<C1 || 0>valB && 0>C1) cubes[i].edge[3].clean = true;
                 else
                 {
-                    cb.edge[3].val1 = valB;
-                    cb.edge[3].val2 = C1;
-                    auto vtx = linear_interp(cb.edge[3]);
-                    cb.edge[3].interp[0] = vtx[0];
-                    cb.edge[3].interp[1] = vtx[1];
-                    cb.edge[3].interp[2] = vtx[2];
+                    cubes[i].edge[3].val1 = valB;
+                    cubes[i].edge[3].val2 = C1;
+                    auto vtx = linear_interp(cubes[i].edge[3]);
+                    cubes[i].edge[3].interp[0] = vtx[0];
+                    cubes[i].edge[3].interp[1] = vtx[1];
+                    cubes[i].edge[3].interp[2] = vtx[2];
                 }
-                if(0<valB && 0<B1 || 0>valB && 0>B1) cb.edge[4].clean = true;
+                if(0<valB && 0<B1 || 0>valB && 0>B1) cubes[i].edge[4].clean = true;
                 else
                 {
-                    cb.edge[4].val1 = valB;
-                    cb.edge[4].val2 = B1;
-                    auto vtx = linear_interp(cb.edge[4]);
-                    cb.edge[4].interp[0] = vtx[0];
-                    cb.edge[4].interp[1] = vtx[1];
-                    cb.edge[4].interp[2] = vtx[2];
+                    cubes[i].edge[4].val1 = valB;
+                    cubes[i].edge[4].val2 = B1;
+                    auto vtx = linear_interp(cubes[i].edge[4]);
+                    cubes[i].edge[4].interp[0] = vtx[0];
+                    cubes[i].edge[4].interp[1] = vtx[1];
+                    cubes[i].edge[4].interp[2] = vtx[2];
                 }
-                if(0<valC && 0<C1 || 0>valC && 0>C1) cb.edge[5].clean = true;
+                if(0<valC && 0<C1 || 0>valC && 0>C1) cubes[i].edge[5].clean = true;
                 else
                 {
-                    cb.edge[5].val1 = valC;
-                    cb.edge[5].val2 = C1;
-                    auto vtx = linear_interp(cb.edge[5]);
-                    cb.edge[5].interp[0] = vtx[0];
-                    cb.edge[5].interp[1] = vtx[1];
-                    cb.edge[5].interp[2] = vtx[2];
+                    cubes[i].edge[5].val1 = valC;
+                    cubes[i].edge[5].val2 = C1;
+                    auto vtx = linear_interp(cubes[i].edge[5]);
+                    cubes[i].edge[5].interp[0] = vtx[0];
+                    cubes[i].edge[5].interp[1] = vtx[1];
+                    cubes[i].edge[5].interp[2] = vtx[2];
                 }
-                if(0<valC && 0<D1 || 0>valC && 0>D1) cb.edge[6].clean = true;
+                if(0<valC && 0<D1 || 0>valC && 0>D1) cubes[i].edge[6].clean = true;
                 else
                 {
-                    cb.edge[6].val1 = valC;
-                    cb.edge[6].val2 = D1;
-                    auto vtx = linear_interp(cb.edge[6]);
-                    cb.edge[6].interp[0] = vtx[0];
-                    cb.edge[6].interp[1] = vtx[1];
-                    cb.edge[6].interp[2] = vtx[2];
+                    cubes[i].edge[6].val1 = valC;
+                    cubes[i].edge[6].val2 = D1;
+                    auto vtx = linear_interp(cubes[i].edge[6]);
+                    cubes[i].edge[6].interp[0] = vtx[0];
+                    cubes[i].edge[6].interp[1] = vtx[1];
+                    cubes[i].edge[6].interp[2] = vtx[2];
                 }
-                if(0<C1 && 0<A1 || 0>C1 && 0>A1) cb.edge[7].clean = true;
+                if(0<C1 && 0<A1 || 0>C1 && 0>A1) cubes[i].edge[7].clean = true;
                 else
                 {
-                    cb.edge[7].val1 = C1;
-                    cb.edge[7].val2 = A1;
-                    auto vtx = linear_interp(cb.edge[7]);
-                    cb.edge[7].interp[0] = vtx[0];
-                    cb.edge[7].interp[1] = vtx[1];
-                    cb.edge[7].interp[2] = vtx[2];
+                    cubes[i].edge[7].val1 = C1;
+                    cubes[i].edge[7].val2 = A1;
+                    auto vtx = linear_interp(cubes[i].edge[7]);
+                    cubes[i].edge[7].interp[0] = vtx[0];
+                    cubes[i].edge[7].interp[1] = vtx[1];
+                    cubes[i].edge[7].interp[2] = vtx[2];
                 }
-                if(0<B1 && 0<A1 || 0>B1 && 0>A1) cb.edge[8].clean = true;
+                if(0<B1 && 0<A1 || 0>B1 && 0>A1) cubes[i].edge[8].clean = true;
                 else
                 {
-                    cb.edge[8].val1 = B1;
-                    cb.edge[8].val2 = A1;
-                    auto vtx = linear_interp(cb.edge[8]);
-                    cb.edge[8].interp[0] = vtx[0];
-                    cb.edge[8].interp[1] = vtx[1];
-                    cb.edge[8].interp[2] = vtx[2];
+                    cubes[i].edge[8].val1 = B1;
+                    cubes[i].edge[8].val2 = A1;
+                    auto vtx = linear_interp(cubes[i].edge[8]);
+                    cubes[i].edge[8].interp[0] = vtx[0];
+                    cubes[i].edge[8].interp[1] = vtx[1];
+                    cubes[i].edge[8].interp[2] = vtx[2];
                 }
-                if(0<valD && 0<B1 || 0>valD && 0>B1) cb.edge[9].clean = true;
+                if(0<valD && 0<B1 || 0>valD && 0>B1) cubes[i].edge[9].clean = true;
                 else
                 {
-                    cb.edge[9].val1 = valD;
-                    cb.edge[9].val2 = B1;
-                    auto vtx = linear_interp(cb.edge[9]);
-                    cb.edge[9].interp[0] = vtx[0];
-                    cb.edge[9].interp[1] = vtx[1];
-                    cb.edge[9].interp[2] = vtx[2];
+                    cubes[i].edge[9].val1 = valD;
+                    cubes[i].edge[9].val2 = B1;
+                    auto vtx = linear_interp(cubes[i].edge[9]);
+                    cubes[i].edge[9].interp[0] = vtx[0];
+                    cubes[i].edge[9].interp[1] = vtx[1];
+                    cubes[i].edge[9].interp[2] = vtx[2];
                 }
-                if(0<valD && 0<D1 || 0>valD && 0>D1) cb.edge[10].clean = true;
+                if(0<valD && 0<D1 || 0>valD && 0>D1) cubes[i].edge[10].clean = true;
                 else
                 {
-                    cb.edge[10].val1 = valD;
-                    cb.edge[10].val2 = D1;
-                    auto vtx = linear_interp(cb.edge[10]);
-                    cb.edge[10].interp[0] = vtx[0];
-                    cb.edge[10].interp[1] = vtx[1];
-                    cb.edge[10].interp[2] = vtx[2];
+                    cubes[i].edge[10].val1 = valD;
+                    cubes[i].edge[10].val2 = D1;
+                    auto vtx = linear_interp(cubes[i].edge[10]);
+                    cubes[i].edge[10].interp[0] = vtx[0];
+                    cubes[i].edge[10].interp[1] = vtx[1];
+                    cubes[i].edge[10].interp[2] = vtx[2];
                 }
-                if(0<D1 && 0<A1 || 0>D1 && 0>A1) cb.edge[11].clean = true;
+                if(0<D1 && 0<A1 || 0>D1 && 0>A1) cubes[i].edge[11].clean = true;
                 else
                 {
-                    cb.edge[11].val1 = D1;
-                    cb.edge[11].val2 = A1;
-                    auto vtx = linear_interp(cb.edge[11]);
-                    cb.edge[11].interp[0] = vtx[0];
-                    cb.edge[11].interp[1] = vtx[1];
-                    cb.edge[11].interp[2] = vtx[2];
+                    cubes[i].edge[11].val1 = D1;
+                    cubes[i].edge[11].val2 = A1;
+                    auto vtx = linear_interp(cubes[i].edge[11]);
+                    cubes[i].edge[11].interp[0] = vtx[0];
+                    cubes[i].edge[11].interp[1] = vtx[1];
+                    cubes[i].edge[11].interp[2] = vtx[2];
                 }
 
             }
@@ -2258,7 +1778,7 @@ void ApplicationMain::MarchingCube(void)
 
 
 
-// std::cout<<"current cube index= "<<cb.xInd << ","<<cb.yInd <<  "," << cb.zInd <<std::endl;
+// std::cout<<"current cube index= "<<cubes[i].xInd << ","<<cubes[i].yInd <<  "," << cubes[i].zInd <<std::endl;
 // std::cout<<__FUNCTION__<<__LINE__<<std::endl;
 // std::cout<< "vals = "<<valA <<", "<<valB <<", "<<valC <<", "<<valD << std::endl;
             
@@ -2268,20 +1788,20 @@ void ApplicationMain::MarchingCube(void)
         else
         {
 std::cout << " getting value for making wire" <<std::endl;
-            valA = GetValue(cb.edge[0].vtx1);
-            valB = GetValue(cb.edge[0].vtx2);
-            valC = GetValue(cb.edge[1].vtx2);
-            valD = GetValue(cb.edge[2].vtx2);
-            if(0 < valA && 0 < valB || 0 > valA && 0 > valB) cb.edge[0].clean = true;
+            valA = GetValue(cubes[i].edge[0].vtx1);
+            valB = GetValue(cubes[i].edge[0].vtx2);
+            valC = GetValue(cubes[i].edge[1].vtx2);
+            valD = GetValue(cubes[i].edge[2].vtx2);
+            if(0 < valA && 0 < valB || 0 > valA && 0 > valB) cubes[i].edge[0].clean = true;
             else
             {
 
-                cb.edge[0].val1 = valA;
-                cb.edge[0].val2 = valB;
-                auto vtx = linear_interp(cb.edge[0]);
-                cb.edge[0].interp[0] = vtx[0];
-                cb.edge[0].interp[1] = vtx[1];
-                cb.edge[0].interp[2] = vtx[2];
+                cubes[i].edge[0].val1 = valA;
+                cubes[i].edge[0].val2 = valB;
+                auto vtx = linear_interp(cubes[i].edge[0]);
+                cubes[i].edge[0].interp[0] = vtx[0];
+                cubes[i].edge[0].interp[1] = vtx[1];
+                cubes[i].edge[0].interp[2] = vtx[2];
 
 
                 // interpVtx.push_back(vtx[0]);interpVtx.push_back(vtx[1]);interpVtx.push_back(vtx[2]);
@@ -2290,16 +1810,16 @@ std::cout << " getting value for making wire" <<std::endl;
 
             }
             
-            if(0 < valA && 0 < valC || 0 > valA && 0 > valC) cb.edge[1].clean = true;
+            if(0 < valA && 0 < valC || 0 > valA && 0 > valC) cubes[i].edge[1].clean = true;
             else
             {
 
-                cb.edge[1].val1 = valA;
-                cb.edge[1].val2 = valC;
-                auto vtx = linear_interp(cb.edge[1]);
-                cb.edge[1].interp[0] = vtx[0];
-                cb.edge[1].interp[1] = vtx[1];
-                cb.edge[1].interp[2] = vtx[2];
+                cubes[i].edge[1].val1 = valA;
+                cubes[i].edge[1].val2 = valC;
+                auto vtx = linear_interp(cubes[i].edge[1]);
+                cubes[i].edge[1].interp[0] = vtx[0];
+                cubes[i].edge[1].interp[1] = vtx[1];
+                cubes[i].edge[1].interp[2] = vtx[2];
                 
 
 
@@ -2307,15 +1827,15 @@ std::cout << " getting value for making wire" <<std::endl;
                 // interpCol.push_back(0);interpCol.push_back(1);interpCol.push_back(0);interpCol.push_back(1);
  
             }
-            if(0 < valA && 0 < valD || 0 >valA && 0 >valD) cb.edge[2].clean = true;
+            if(0 < valA && 0 < valD || 0 >valA && 0 >valD) cubes[i].edge[2].clean = true;
             else
             {
-                cb.edge[2].val1 = valA;
-                cb.edge[2].val2 = valD;
-                auto vtx = linear_interp(cb.edge[2]);
-                cb.edge[2].interp[0] = vtx[0];
-                cb.edge[2].interp[1] = vtx[1];
-                cb.edge[2].interp[2] = vtx[2];
+                cubes[i].edge[2].val1 = valA;
+                cubes[i].edge[2].val2 = valD;
+                auto vtx = linear_interp(cubes[i].edge[2]);
+                cubes[i].edge[2].interp[0] = vtx[0];
+                cubes[i].edge[2].interp[1] = vtx[1];
+                cubes[i].edge[2].interp[2] = vtx[2];
 
 
                 // interpVtx.push_back(vtx[0]);interpVtx.push_back(vtx[1]);interpVtx.push_back(vtx[2]);
@@ -2326,10 +1846,12 @@ std::cout << " getting value for making wire" <<std::endl;
         
 
         
-        
+std::cout<<__FUNCTION__<<__LINE__<<std::endl;        
     }
-
+std::cout<<__FUNCTION__<<__LINE__<<std::endl;
 }
+
+
 
 
 std::vector<float> ApplicationMain::CrossProduct(std::vector<float> a, std::vector<float> b)
@@ -2576,16 +2098,16 @@ void ApplicationMain::Draw(void) const
 
 
     // Draw test plane - line intersection points.
-    // glEnable(GL_COLOR_MATERIAL);
-    // glDisable(GL_LIGHTING);
-    // glEnableClientState(GL_VERTEX_ARRAY);
-    // glEnableClientState(GL_COLOR_ARRAY);
-    // glColorPointer(4,GL_FLOAT,0,istcTestCol.data());
-    // glVertexPointer(3,GL_FLOAT,0,istcTestVtx.data());
-    // glPointSize(5);
-    // glDrawArrays(GL_POINTS,0,istcTestVtx.size()/3);
-    // glDisableClientState(GL_VERTEX_ARRAY);
-    // glDisableClientState(GL_COLOR_ARRAY);
+    glEnable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glColorPointer(4,GL_FLOAT,0,istcTestCol.data());
+    glVertexPointer(3,GL_FLOAT,0,istcTestVtx.data());
+    glPointSize(5);
+    glDrawArrays(GL_POINTS,0,istcTestVtx.size()/3);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
 
     // Draw debug point vertices.
     glEnable(GL_COLOR_MATERIAL);
@@ -2608,7 +2130,7 @@ void ApplicationMain::Draw(void) const
         glEnableClientState(GL_COLOR_ARRAY);
         glColorPointer(4,GL_FLOAT,0,highCol.data());
         glVertexPointer(3,GL_FLOAT,0,highVtx.data());
-        glLineWidth(15);
+        glLineWidth(12);
         glDrawArrays(GL_LINES,0,highVtx.size()/3);
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
@@ -2649,19 +2171,19 @@ void ApplicationMain::RunOneStep(void)
 	
     if(FsGetKeyState(FSKEY_LEFT))
     {
-        Rc.RotateXZ(YsPi/120.0);
+        Rc.RotateXZ(YsPi/60.0);
     }
     if(FsGetKeyState(FSKEY_RIGHT))
     {
-        Rc.RotateXZ(-YsPi/120.0);
+        Rc.RotateXZ(-YsPi/60.0);
     }
     if(FsGetKeyState(FSKEY_UP))
     {
-        Rc.RotateYZ(YsPi/120.0);
+        Rc.RotateYZ(YsPi/60.0);
     }
     if(FsGetKeyState(FSKEY_DOWN))
     {
-        Rc.RotateYZ(-YsPi/120.0);
+        Rc.RotateYZ(-YsPi/60.0);
     }
 
     if(key==FSKEY_Q)
@@ -2734,15 +2256,15 @@ void ApplicationMain::RunOneStep(void)
         term=true;
     }
 
-    // ZOOM OUT
-    if(key==FSKEY_WHEELUP || key==FSKEY_Q)
+    // ZOOM IN
+    if(key==FSKEY_WHEELUP)
     {
 
         d+=0.03*d;
     }
 
-    // ZOOM IN
-    if(key==FSKEY_WHEELDOWN || key==FSKEY_W)
+    // ZOOM OUT
+    if(key==FSKEY_WHEELDOWN)
     {
 
         d-=0.03*d;
@@ -2776,7 +2298,6 @@ void ApplicationMain::RunOneStep(void)
 std::cout<<__FUNCTION__<<__LINE__<<std::endl;
         if(true!=highlight) highlight = true;
         else highlight = false;
-printf("highlighted vtx num: %d \n",highVtx.size()/3);
     }
 
     if(key == FSKEY_I)
@@ -2908,44 +2429,28 @@ ApplicationMain::ApplicationMain(int argc, char *argv[])
         else
         {
             float a;
-            char c[256];
             std::vector<float> temp;
-            char sharp[] = "#";
-
-            while(myfile>>c)
+            int count = 0;
+std::cout<<__FUNCTION__<<__LINE__<<std::endl;
+            while(myfile>>a)
             {
-                
-                if(strcmp(c,sharp)==0)
+
+std::cout << a <<std::endl;
+                temp.push_back(a);
+                count++;
+                if(temp.size()==3)
                 {
                     polyVert.push_back(temp);
                     temp.clear();
-// std::cout<<__FUNCTION__<<__LINE__<<std::endl;
                 }
-                else
-                {
-                    temp.push_back(atof(c));
-                }
-                
-// std::cout<<__FUNCTION__<<__LINE__<<std::endl;
-                
-                // if(temp.size()==3)
-                // {
-                //     polyVert.push_back(temp);
-                //     temp.clear();
-                // }
             }
-std::cout<<"CHECK INPUT POLYVERT\n";
-std::cout<< "polyVert.size(): " << polyVert.size() <<std::endl;
-            for(auto points : polyVert)
+            for(auto p : polyVert)
             {
-                for(auto v : points)
-                {
-                    printf("%f ",v);
-                }
-                printf("\n");
+std::cout<<__FUNCTION__<<__LINE__<<std::endl;
+                std::cout<<p.size()<<std::endl;
+                printf("%f,%f,%f -",p[0],p[1],p[2]);
             }
-            
-        
+            std::cout<<std::endl;
             myfile.close();
 
 
@@ -3092,23 +2597,11 @@ std::cout<< wid <<","<<minX <<","<<nx<<","<<xStep<<std::endl;
 
 
 
-    // HERE
+
     if(true==wire ||true==fromFile)
     {
+        std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
         GenerateCubes();
-
-        // MarchingCube();
-        std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
-
-        // intersections . . .
-        StoreIntersections();
-        std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
-
-        // modify . . .
-        SearchAndModify();
-        std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
-
-        // SearchAndMoveItsc();
         std::cout<<__FUNCTION__<<"---"<<__LINE__<< std::endl;    
 
         MarchingCube();
