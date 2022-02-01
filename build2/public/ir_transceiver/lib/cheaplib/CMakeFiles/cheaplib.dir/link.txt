@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libcheaplib.a CMakeFiles/cheaplib.dir/cheaputil.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libcheaplib.a

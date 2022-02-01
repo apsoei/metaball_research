@@ -1,1 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/c++  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.0.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/meta2.dir/meta2.cpp.o -o meta2.app/Contents/MacOS/meta2  public/fssimplewindow/src/libfssimplewindow.a libglutil.a -framework Cocoa -framework OpenGL public/ysclass/src/libysclass.a 

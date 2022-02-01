@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libyssystemfont.a CMakeFiles/yssystemfont.dir/macosx/ysmacosxsystemfont.cpp.o CMakeFiles/yssystemfont.dir/macosx/ysmacosxsystemfont_objc.m.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libyssystemfont.a

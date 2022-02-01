@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libgeblgl.a CMakeFiles/geblgl.dir/ysshellextgl.cpp.o CMakeFiles/geblgl.dir/ysvisual.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libgeblgl.a

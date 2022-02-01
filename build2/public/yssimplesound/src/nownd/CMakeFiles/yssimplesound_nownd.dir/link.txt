@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libyssimplesound_nownd.a CMakeFiles/yssimplesound_nownd.dir/yssimplesound_nownd.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libyssimplesound_nownd.a

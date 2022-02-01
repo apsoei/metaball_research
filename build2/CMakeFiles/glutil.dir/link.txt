@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libglutil.a CMakeFiles/glutil.dir/glutil.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libglutil.a

@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libysglcpp_gl1.a CMakeFiles/ysglcpp_gl1.dir/ysglbuffermanager_gl1.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libysglcpp_gl1.a

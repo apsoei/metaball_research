@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libirtoylib.a CMakeFiles/irtoylib.dir/irtoy.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libirtoylib.a

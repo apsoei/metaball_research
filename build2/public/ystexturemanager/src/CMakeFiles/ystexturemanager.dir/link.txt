@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libystexturemanager.a CMakeFiles/ystexturemanager.dir/ystexturemanager.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libystexturemanager.a
